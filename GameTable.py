@@ -1,5 +1,3 @@
-import copy
-import math
 import time
 from typing import Optional, Tuple
 
@@ -13,7 +11,6 @@ class GameTable:
     def __init__(self, width: float, length: float, game_balls: list[GameBall]):
         self.width = width
         self.length = length
-        self.surface = pygame.display.set_mode((width, length))
         self.game_balls = game_balls
 
         self._shot_queue: list[ff.Shot] = []
@@ -23,19 +20,16 @@ class GameTable:
 
     @classmethod
     def from_table_state(cls, table_state: ff.TableState):
-        table: ff.Table = table_state.getTable()
-        table_width = table.TABLE_WIDTH
-        table_length = table.TABLE_LENGTH
-        ball_radius = table_state.getBall(0).getRadius()
         game_balls = []
 
-        raw_balls_data = table_state.toString().split(" ")[1:]
-        chunked_ball_data = [raw_balls_data[i:i + 5] for i in range(0, len(raw_balls_data) - 1, 5)]
+        for i in range(ff.Ball.CUE, ff.Ball.FIFTEEN + 1):
+            ball = table_state.getBall(i)
+            pos = ball.getPos()
+            game_balls.append(GameBall(ball.getRadius(), ball.getID(), (pos.x, pos.y)))
 
-        for chunk in chunked_ball_data:
-            game_balls.append(GameBall(ball_radius, int(chunk[2]), (float(chunk[3]), float(chunk[4]))))
+        table: ff.Table = table_state.getTable()
 
-        return cls(table_width, table_length, game_balls)
+        return cls(table.TABLE_WIDTH, table.TABLE_LENGTH, game_balls)
 
     def add_shot(self, shot: ff.Shot):
         self._shot_queue.append(shot)

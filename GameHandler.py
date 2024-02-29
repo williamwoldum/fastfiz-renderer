@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 import pygame
 import fastfiz as ff
@@ -8,54 +8,76 @@ from GameTable import GameTable
 
 class GameHandler:
     _instance = None
-    _SCALE = 400
-    _FRAMES_PER_SECOND = 60
+    _DEFAULT_SCALE = 400
+    _DEFAULT_FRAMES_PER_SECOND = 60
 
     def __init__(self):
-        if GameHandler._instance is not None:
-            raise Exception("This class is a singleton!")
-        else:
+        if GameHandler._instance is None:
+            self._is_playing: bool = False
+            self._table_state: Optional[ff.TableState] = None
+            self._game_table: Optional[GameTable] = None
+            self._start_ball_positions: dict[int, Tuple[float, float]] = dict()
             GameHandler._instance = self
             pygame.init()
-            self.table_state: Optional[ff.TableState] = None
+        else:
+            raise Exception("This class is a singleton!")
 
     def __del__(self):
         pygame.quit()
 
-    def play_eight_ball(self, scale: int = _SCALE, frames_per_second: int = _FRAMES_PER_SECOND):
+    def play_eight_ball(self, scale: int = _DEFAULT_SCALE, frames_per_second: int = _DEFAULT_FRAMES_PER_SECOND):
         game_state: ff.GameState = ff.GameState.RackedState(ff.GT_EIGHTBALL)
         table_state: ff.TableState = game_state.tableState()
         self.play_game_from_table_state(table_state, scale, frames_per_second)
 
-    def play_game_from_table_state(self, table_state: ff.TableState, scale: int = _SCALE,
-                                   frames_per_second: int = _FRAMES_PER_SECOND):
-        self.table_state = table_state
-        game_table = GameTable.from_table_state(table_state)
-        display = pygame.display.set_mode((game_table.width * scale, game_table.length * scale))
+    def play_game_from_table_state(self, table_state: ff.TableState, scale: int = _DEFAULT_SCALE,
+                                   frames_per_second: int = _DEFAULT_FRAMES_PER_SECOND):
+        self._is_playing = True
+        self._table_state = table_state
+        self._game_table = GameTable.from_table_state(table_state)
+        self._load_start_balls()
+
+        display = pygame.display.set_mode((self._game_table.width * scale, self._game_table.length * scale))
         clock = pygame.time.Clock()
 
-        while True:
+        while self._is_playing:
             pygame.display.flip()
             clock.tick(frames_per_second)
 
-            game_table.update()
-            game_table.draw(display, scale)
+            self._game_table.update()
+            self._game_table.draw(display, scale)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     return
-                if event.type == pygame.KEYDOWN:
+                elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         return
+                    elif event.key == pygame.K_r:
+                        self._handle_restart()
                     elif event.key == pygame.K_RIGHT:
-                        shot = self._get_next_shot()
-                        game_table.add_shot(shot)
+                        self._handle_shoot()
 
-    def _get_next_shot(self) -> ff.Shot:
+    def _handle_stop(self):
+        self._is_playing = False
+
+    def _handle_restart(self):
+        for ball_number, pos in self._start_ball_positions.items():
+            self._table_state.setBall(ball_number, ff.Ball.STATIONARY, pos[0], pos[1])
+        self._game_table = GameTable.from_table_state(self._table_state)
+
+    def _handle_shoot(self):
         shot_params = ff.ShotParams()
         shot_params.v = 10
         shot_params.a = 0
         shot_params.b = 0
         shot_params.phi = 270
         shot_params.theta = 11
-        return self.table_state.executeShot(shot_params)
+        shot = self._table_state.executeShot(shot_params)
+        self._game_table.add_shot(shot)
+
+    def _load_start_balls(self):
+        for i in range(ff.Ball.CUE, ff.Ball.FIFTEEN + 1):
+            ball = self._table_state.getBall(i)
+            pos = ball.getPos()
+            self._start_ball_positions[ball.getID()] = (pos.x, pos.y)
