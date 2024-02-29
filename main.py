@@ -2,15 +2,16 @@ import fastfiz
 import fastfiz as ff
 import pygame
 import sys
+import os
 
 from GameTable import GameTable
 
-SCALE = 300
+SCALE = 400
 
 
 def get_next_shot(table_state: ff.TableState) -> ff.Shot:
     shot_params = ff.ShotParams()
-    shot_params.v = 0.5
+    shot_params.v = 10
     shot_params.a = 0
     shot_params.b = 0
     shot_params.phi = 270
@@ -58,4 +59,5 @@ def main():
 
 
 if __name__ == '__main__':
+    os.environ['SDL_VIDEO_WINDOW_POS'] = "100, 100"
     main()

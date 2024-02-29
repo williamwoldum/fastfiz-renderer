@@ -105,15 +105,11 @@ class GameTable:
         prev_state: _BallState = relevant_states[0]
         next_state: _BallState = relevant_states[-1]
 
-        if prev_state.e_time > time_since_shot_start:
+        if prev_state.e_time > time_since_shot_start or next_state.e_time < time_since_shot_start:
             return ball.position
 
-        if next_state.e_time < time_since_shot_start:
-            return ball.position
-
-        for i in range(len(relevant_states) - 1):
-            state = relevant_states[i]
-            if prev_state.e_time <= state.e_time <= time_since_shot_start:
+        for state in relevant_states:
+            if prev_state.e_time < state.e_time <= time_since_shot_start:
                 prev_state = state
             elif next_state.e_time > state.e_time > time_since_shot_start:
                 next_state = state
@@ -122,22 +118,28 @@ class GameTable:
         # for state in relevant_states:
         #     print(state)
 
-        state_diff_pos = (next_state.pos[0] - prev_state.pos[0], next_state.pos[1] - prev_state.pos[1])
+        # state_diff_pos = (next_state.pos[0] - prev_state.pos[0], next_state.pos[1] - prev_state.pos[1])
+        # state_diff_pos_mag = math.sqrt(state_diff_pos[0] ** 2 + state_diff_pos[1] ** 2)
+        #
+        # if state_diff_pos_mag == 0:
+        #     return ball.position
+        #
+        # next_state_vel_mag = math.sqrt(next_state.vel[0] ** 2 + next_state.vel[1] ** 2)
+        # normalized_state_diff_pos = (state_diff_pos[0] / state_diff_pos_mag, state_diff_pos[1] / state_diff_pos_mag)
+        #
+        # corrected_next_state_vel = (normalized_state_diff_pos[0] * next_state_vel_mag,
+        #                             normalized_state_diff_pos[1] * next_state_vel_mag)
+        #
+        # displacement_x = 0.5 * (prev_state.vel[0] + corrected_next_state_vel[0]) * time_since_shot_start
+        # displacement_y = 0.5 * (prev_state.vel[1] + corrected_next_state_vel[1]) * time_since_shot_start
 
-        if state_diff_pos[0] == 0 and state_diff_pos[1] == 0:
-            return ball.position
+        a_x = (next_state.pos[0] - prev_state.pos[0]) / (next_state.e_time - prev_state.e_time)
+        b_x = (prev_state.pos[0] - a_x * prev_state.e_time)
 
-        state_diff_pos_mag = math.sqrt(state_diff_pos[0] ** 2 + state_diff_pos[1] ** 2)
-        next_state_vel_mag = math.sqrt(next_state.vel[0] ** 2 + next_state.vel[1] ** 2)
-        normalized_state_diff_pos = (state_diff_pos[0] / state_diff_pos_mag, state_diff_pos[1] / state_diff_pos_mag)
+        a_y = (next_state.pos[1] - prev_state.pos[1]) / (next_state.e_time - prev_state.e_time)
+        b_y = (prev_state.pos[1] - a_y * prev_state.e_time)
 
-        corrected_next_state_vel = (normalized_state_diff_pos[0] * next_state_vel_mag,
-                                    normalized_state_diff_pos[1] * next_state_vel_mag)
-
-        displacement_x = 0.5 * (prev_state.vel[0] + corrected_next_state_vel[0]) * time_since_shot_start
-        displacement_y = 0.5 * (prev_state.vel[1] + corrected_next_state_vel[1]) * time_since_shot_start
-
-        new_pos = (displacement_x + prev_state.pos[0], displacement_y + prev_state.pos[1])
+        new_pos = (a_x * time_since_shot_start + b_x, a_y * time_since_shot_start + b_y)
 
         return new_pos
 
