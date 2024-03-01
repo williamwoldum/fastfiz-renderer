@@ -1,9 +1,9 @@
-import math
 import time
-from typing import Optional, Tuple
+from typing import Optional
 
 import fastfiz as ff
 import pygame
+import vectormath as vmath
 
 from GameBall import GameBall
 
@@ -17,16 +17,16 @@ class GameTable:
         self._shot_queue: list[ff.Shot] = []
         self._active_shot: Optional[ff.Shot] = None
         self._active_shot_start_time: float = 0
-        self._game_ball_positions_before_shot: dict[int, Tuple[float, float]] = self._get_ball_positions()
+        self._game_ball_positions_before_shot: dict[int, vmath.Vector2] = self._get_ball_positions()
 
     @classmethod
     def from_table_state(cls, table_state: ff.TableState):
         game_balls = []
 
         for i in range(ff.Ball.CUE, ff.Ball.FIFTEEN + 1):
-            ball = table_state.getBall(i)
+            ball: ff.Ball = table_state.getBall(i)
             pos = ball.getPos()
-            game_balls.append(GameBall(ball.getRadius(), ball.getID(), (pos.x, pos.y)))
+            game_balls.append(GameBall(ball.getRadius(), ball.getID(), vmath.Vector2(pos.x, pos.y), ball.getState()))
 
         table: ff.Table = table_state.getTable()
 
@@ -65,10 +65,10 @@ class GameTable:
             for ball in self.game_balls:
                 ball.position = self._calc_ball_position(ball, time_since_shot_start)
 
-    def _get_ball_positions(self) -> dict[int, Tuple[float, float]]:
+    def _get_ball_positions(self) -> dict[int, vmath.Vector2]:
         positions = dict()
         for ball in self.game_balls:
-            positions[ball.number] = (ball.position[0], ball.position[1])
+            positions[ball.number] = vmath.Vector2(ball.position[0], ball.position[1])
         return positions
 
     def _get_relevant_ball_states_from_active_shot(self, ball: GameBall):
@@ -91,7 +91,7 @@ class GameTable:
             if relevant_states:
                 ball.position = relevant_states[-1].pos
 
-    def _calc_ball_position(self, ball: GameBall, time_since_shot_start: float) -> Tuple[float, float]:
+    def _calc_ball_position(self, ball: GameBall, time_since_shot_start: float) -> vmath.Vector2:
         relevant_states = self._get_relevant_ball_states_from_active_shot(ball)
 
         if not relevant_states:
@@ -113,51 +113,32 @@ class GameTable:
         # for state in relevant_states:
         #     print(state)
 
-        pos_diff = (next_state.pos[0] - prev_state.pos[0], next_state.pos[1] - prev_state.pos[1])
-        pos_diff_mag = math.sqrt(pos_diff[0] ** 2 + pos_diff[1] ** 2)
+        pos_diff = next_state.pos - prev_state.pos
 
-        if pos_diff_mag == 0:
+        if pos_diff.length == 0:
             return ball.position
 
-        prev_state_vel_mag = math.sqrt(prev_state.vel[0] ** 2 + prev_state.vel[1] ** 2)
-        next_state_vel_mag = math.sqrt(next_state.vel[0] ** 2 + next_state.vel[1] ** 2)
+        corrected_prev_state_vel = (pos_diff.copy().normalize() * prev_state.vel.length)
+        corrected_next_state_vel = (pos_diff.copy().normalize() * next_state.vel.length)
 
-
-        normalized_pos_diff = (pos_diff[0] / pos_diff_mag, pos_diff[1] / pos_diff_mag)
-
-        corrected_prev_state_vel = (normalized_pos_diff[0] * prev_state_vel_mag,
-                                    normalized_pos_diff[1] * prev_state_vel_mag)
-
-        corrected_next_state_vel = (normalized_pos_diff[0] * next_state_vel_mag,
-                                    normalized_pos_diff[1] * next_state_vel_mag)
+        corrected_next_state_time = next_state.e_time - prev_state.e_time
 
         time_since_event_start = time_since_shot_start - prev_state.e_time
 
-        displacement_x = ((corrected_next_state_vel[0] - corrected_prev_state_vel[0]) * (time_since_event_start ** 2)) / ((next_state.e_time - prev_state.e_time) * 2)
-        displacement_y = ((corrected_next_state_vel[1] - corrected_prev_state_vel[1]) * (time_since_event_start ** 2)) / ((next_state.e_time - prev_state.e_time) * 2)
+        def calc_displacement(delta_time: float) -> vmath.Vector2:
+            return (corrected_next_state_vel - corrected_prev_state_vel) / corrected_next_state_time * (
+                        delta_time ** 2 / 2) + corrected_prev_state_vel * delta_time
 
-        new_pos = (displacement_x + prev_state.pos[0], displacement_y + prev_state.pos[1])
-
-
-
-
-        # a_x = (next_state.pos[0] - prev_state.pos[0]) / (next_state.e_time - prev_state.e_time)
-        # b_x = (prev_state.pos[0] - a_x * prev_state.e_time)
-        #
-        # a_y = (next_state.pos[1] - prev_state.pos[1]) / (next_state.e_time - prev_state.e_time)
-        # b_y = (prev_state.pos[1] - a_y * prev_state.e_time)
-        #
-        # new_pos = (a_x * time_since_shot_start + b_x, a_y * time_since_shot_start + b_y)
-
-        return new_pos
+        return calc_displacement(time_since_event_start) + prev_state.pos
 
 
 class _BallState:
-    def __init__(self, e_time: float, pos: Tuple[float, float], vel: Tuple[float, float], state: str):
+    def __init__(self, e_time: float, pos: vmath.Vector2, vel: vmath.Vector2, state: str, event_course: int):
         self.e_time = e_time
         self.pos = pos
         self.vel = vel
         self.state = state
+        self.event_course = event_course
 
     @classmethod
     def from_event_and_ball(cls, event: ff.Event, ball: ff.Ball):
@@ -165,10 +146,11 @@ class _BallState:
         pos = ball.getPos()
         vel = ball.getVelocity()
         state = ball.getStateString()
-        return cls(e_time, (pos.x, pos.y), (vel.x, vel.y), state)
+        event_course = event.getType()
+        return cls(e_time, vmath.Vector2([pos.x, pos.y]), vmath.Vector2([vel.x, vel.y]), state, event_course)
 
     def __str__(self):
-        return (f"Time: {self.e_time},\t "
-                f"Pos: ({self.pos[0]:.4f}, {self.pos[1]:.4f}),\t "
-                f"Vel: ({self.vel[0]:.4f}, {self.vel[1]:.4f}),\t "
+        return (f"Time: {self.e_time:.3f},\t "
+                f"Pos: ({self.pos.x:.3f}, {self.pos.y:.3f}),\t "
+                f"Vel: ({self.vel.x:.3f}, {self.vel.y:.3f}),\t "
                 f"State: {self.state}")

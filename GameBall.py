@@ -1,6 +1,8 @@
 from typing import Tuple
 
 import pygame
+import fastfiz as ff
+import vectormath as vmath
 
 
 class GameBall:
@@ -17,18 +19,22 @@ class GameBall:
         9: (180, 180, 10)  # Gold
     }
 
-    def __init__(self, radius: float, number: int, position: Tuple[float, float]):
+    def __init__(self, radius: float, number: int, position: vmath.Vector2, state: int):
         self.radius = radius
         self.number = number
         self.position = position
+        self.state = state
         self.color = GameBall.ball_colors[number if number <= 9 else number - 8]
         self.striped = number >= 9
 
     def draw(self, screen: pygame.Surface, scale=300):
+        if self.state == ff.Ball.NOTINPLAY:
+            return
+
         pygame.draw.circle(screen, self.color,
-                           (self.position[0] * scale, self.position[1] * scale),
+                           (self.position.x * scale, self.position.y * scale),
                            self.radius * scale)
         if self.striped:
             pygame.draw.circle(screen, (255, 255, 255),
-                               (self.position[0] * scale, self.position[1] * scale),
+                               (self.position.x * scale, self.position.y * scale),
                                0.01 * scale)

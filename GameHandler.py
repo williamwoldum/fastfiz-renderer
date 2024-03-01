@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Callable
 
 import pygame
 import fastfiz as ff
@@ -17,6 +17,7 @@ class GameHandler:
             self._table_state: Optional[ff.TableState] = None
             self._game_table: Optional[GameTable] = None
             self._start_ball_positions: dict[int, Tuple[float, float]] = dict()
+            self._shot_decider: Optional[Callable[[ff.TableState], ff.ShotParams]] = None
             GameHandler._instance = self
             pygame.init()
         else:
@@ -25,17 +26,20 @@ class GameHandler:
     def __del__(self):
         pygame.quit()
 
-    def play_eight_ball(self, scale: int = _DEFAULT_SCALE, frames_per_second: int = _DEFAULT_FRAMES_PER_SECOND):
+    def play_eight_ball(self, shot_decider: Callable[[ff.TableState], ff.ShotParams], scale: int = _DEFAULT_SCALE,
+                        frames_per_second: int = _DEFAULT_FRAMES_PER_SECOND):
         game_state: ff.GameState = ff.GameState.RackedState(ff.GT_EIGHTBALL)
         table_state: ff.TableState = game_state.tableState()
-        self.play_game_from_table_state(table_state, scale, frames_per_second)
+        self.play_game_from_table_state(table_state, shot_decider, scale, frames_per_second)
 
-    def play_game_from_table_state(self, table_state: ff.TableState, scale: int = _DEFAULT_SCALE,
+    def play_game_from_table_state(self, table_state: ff.TableState,
+                                   shot_decider: Callable[[ff.TableState], ff.ShotParams], scale: int = _DEFAULT_SCALE,
                                    frames_per_second: int = _DEFAULT_FRAMES_PER_SECOND):
         self._is_playing = True
         self._table_state = table_state
         self._game_table = GameTable.from_table_state(table_state)
         self._load_start_balls()
+        self._shot_decider = shot_decider
 
         display = pygame.display.set_mode((self._game_table.width * scale, self._game_table.length * scale))
         clock = pygame.time.Clock()
@@ -67,13 +71,8 @@ class GameHandler:
         self._game_table = GameTable.from_table_state(self._table_state)
 
     def _handle_shoot(self):
-        shot_params = ff.ShotParams()
-        shot_params.v = 10
-        shot_params.a = 0
-        shot_params.b = 0
-        shot_params.phi = 270
-        shot_params.theta = 11
-        shot = self._table_state.executeShot(shot_params)
+        params = self._shot_decider(self._table_state)
+        shot = self._table_state.executeShot(params)
         self._game_table.add_shot(shot)
 
     def _load_start_balls(self):
