@@ -31,3 +31,13 @@ class DevShotDeciders:
         shot_params.phi = 260 + random() * 20
         shot_params.theta = 11
         return shot_params
+
+    @staticmethod
+    def get_north_shot_decider(_: ff.TableState) -> ff.ShotParams:
+        shot_params = ff.ShotParams()
+        shot_params.v = 1.5
+        shot_params.a = 0
+        shot_params.b = 0
+        shot_params.phi = 270
+        shot_params.theta = 11
+        return shot_params

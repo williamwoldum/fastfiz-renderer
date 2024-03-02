@@ -9,15 +9,18 @@ from GameBall import GameBall
 
 
 class GameTable:
-    def __init__(self, width: float, length: float, game_balls: list[GameBall]):
+    def __init__(self, width: float, length: float, rolling_friction_const: float,
+                 sliding_friction_const: float, gravitational_const: float, game_balls: list[GameBall]):
         self.width = width
         self.length = length
+        self.rolling_friction_const = rolling_friction_const
+        self.sliding_friction_const = sliding_friction_const
+        self.gravitational_const = gravitational_const
         self.game_balls = game_balls
 
         self._shot_queue: list[ff.Shot] = []
         self._active_shot: Optional[ff.Shot] = None
         self._active_shot_start_time: float = 0
-        self._game_ball_positions_before_shot: dict[int, vmath.Vector2] = self._get_ball_positions()
 
     @classmethod
     def from_table_state(cls, table_state: ff.TableState):
@@ -30,7 +33,7 @@ class GameTable:
 
         table: ff.Table = table_state.getTable()
 
-        return cls(table.TABLE_WIDTH, table.TABLE_LENGTH, game_balls)
+        return cls(table.TABLE_WIDTH, table.TABLE_LENGTH, table.MU_ROLLING, table.MU_SLIDING, table.g, game_balls)
 
     def add_shot(self, shot: ff.Shot):
         self._shot_queue.append(shot)
@@ -57,7 +60,6 @@ class GameTable:
 
         if time_since_shot_start > self._active_shot.getDuration():
             self._force_balls_to_correct_pos()
-            self._game_ball_positions_before_shot = self._get_ball_positions()
             self._active_shot = None
             return
 
@@ -97,47 +99,49 @@ class GameTable:
         if not relevant_states:
             return ball.position
 
-        prev_state: _BallState = relevant_states[0]
-        next_state: _BallState = relevant_states[-1]
+        cur_state: _BallState = relevant_states[0]
 
-        if prev_state.e_time > time_since_shot_start or next_state.e_time < time_since_shot_start:
+        if cur_state.e_time > time_since_shot_start:
             return ball.position
 
         for state in relevant_states:
-            if prev_state.e_time < state.e_time <= time_since_shot_start:
-                prev_state = state
-            elif next_state.e_time > state.e_time > time_since_shot_start:
-                next_state = state
+            if cur_state.e_time < state.e_time <= time_since_shot_start:
+                cur_state = state
 
         # print(f"\n{ball.number}")
         # for state in relevant_states:
         #     print(state)
 
-        pos_diff = next_state.pos - prev_state.pos
+        time_since_event_start = time_since_shot_start - cur_state.e_time
 
-        if pos_diff.length == 0:
-            return ball.position
+        def calc_sliding_displacement(delta_time: float) -> vmath.Vector2:
+            rotational_velocity: vmath.Vector3 = ball.radius * vmath.Vector3(0, 0, cur_state.ang_vel.z).cross(cur_state.ang_vel)
+            relative_velocity = cur_state.vel + vmath.Vector2(rotational_velocity.x, rotational_velocity.y)
+            return cur_state.vel * delta_time - 0.5 * self.sliding_friction_const * self.gravitational_const * delta_time ** 2 * relative_velocity.normalize()
 
-        corrected_prev_state_vel = (pos_diff.copy().normalize() * prev_state.vel.length)
-        corrected_next_state_vel = (pos_diff.copy().normalize() * next_state.vel.length)
+        def calc_rolling_displacement(delta_time: float) -> vmath.Vector2:
+            return cur_state.vel * delta_time - 0.5 * self.rolling_friction_const * self.gravitational_const * delta_time ** 2 * cur_state.vel.copy().normalize()
 
-        corrected_next_state_time = next_state.e_time - prev_state.e_time
+        displacement = vmath.Vector2(0, 0)
 
-        time_since_event_start = time_since_shot_start - prev_state.e_time
+        if cur_state.state == ff.Ball.ROLLING:
+            displacement = calc_rolling_displacement(time_since_event_start)
+        if cur_state.state == ff.Ball.SLIDING:
+            displacement = calc_sliding_displacement(time_since_event_start)
 
-        def calc_displacement(delta_time: float) -> vmath.Vector2:
-            return (corrected_next_state_vel - corrected_prev_state_vel) / corrected_next_state_time * (
-                        delta_time ** 2 / 2) + corrected_prev_state_vel * delta_time
-
-        return calc_displacement(time_since_event_start) + prev_state.pos
+        return displacement + cur_state.pos
 
 
 class _BallState:
-    def __init__(self, e_time: float, pos: vmath.Vector2, vel: vmath.Vector2, state: str, event_course: int):
+    def __init__(self, e_time: float, pos: vmath.Vector2, vel: vmath.Vector2, ang_vel: vmath.Vector3, state: int,
+                 state_str: str,
+                 event_course: int):
         self.e_time = e_time
         self.pos = pos
         self.vel = vel
+        self.ang_vel = ang_vel
         self.state = state
+        self.state_str = state_str
         self.event_course = event_course
 
     @classmethod
@@ -145,12 +149,15 @@ class _BallState:
         e_time = event.getTime()
         pos = ball.getPos()
         vel = ball.getVelocity()
-        state = ball.getStateString()
+        ang_vel = ball.getSpin()
+        state = ball.getState()
+        state_str = ball.getStateString()
         event_course = event.getType()
-        return cls(e_time, vmath.Vector2([pos.x, pos.y]), vmath.Vector2([vel.x, vel.y]), state, event_course)
+        return cls(e_time, vmath.Vector2([pos.x, pos.y]), vmath.Vector2([vel.x, vel.y]),
+                   vmath.Vector3([ang_vel.x, ang_vel.y, ang_vel.z]), state, state_str, event_course)
 
     def __str__(self):
         return (f"Time: {self.e_time:.3f},\t "
                 f"Pos: ({self.pos.x:.3f}, {self.pos.y:.3f}),\t "
                 f"Vel: ({self.vel.x:.3f}, {self.vel.y:.3f}),\t "
-                f"State: {self.state}")
+                f"State: {self.state_str}")
