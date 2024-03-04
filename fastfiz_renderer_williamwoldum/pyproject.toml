@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.poetry]
+name = "fastfiz_renderer_williamwoldum"
+version = "0.1.0"
+description = "A renderer for fastfiz"
+authors = ["William Woldum <wwoldu21@student.aau.dk>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+certifi = "==2024.2.2"
+charset-normalizer = "==3.3.2"
+fastfiz = {git = "https://github.com/williamwoldum/fastfiz.git", rev = "2af8aed22bec1faeb5ac92b98b0751a0023f3fb7"}
+freetype-py = "==2.4.0"
+glfw = "==2.7.0"
+hsluv = "==5.0.4"
+idna = "==3.6"
+kiwisolver = "==1.4.5"
+numpy = "==1.26.4"
+p5 = {git = "https://github.com/williamwoldum/p5.git", rev = "a1ba833cd3c5667289d052f593bb12d2802eb780"}
+Pillow = "==9.0.1"
+pybind11 = "==2.11.1"
+PyOpenGL = "==3.1.6"
+PyOpenGL-accelerate = "==3.1.7"
+requests = "==2.31.0"
+skia-python = "==87.5"
+urllib3 = "==1.26.6"
+vectormath = "==0.2.2"
+vispy = "==0.10.0"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
