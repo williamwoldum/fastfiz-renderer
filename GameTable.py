@@ -1,18 +1,32 @@
+import math
 import time
 from typing import Optional
 
 import fastfiz as ff
-import pygame
+from p5 import *
 import vectormath as vmath
 
 from GameBall import GameBall
 
 
 class GameTable:
-    def __init__(self, width: float, length: float, rolling_friction_const: float,
-                 sliding_friction_const: float, gravitational_const: float, game_balls: list[GameBall]):
-        self.width = width
-        self.length = length
+    def __init__(self, width: float, length: float, side_pocket_width: float, corner_pocket_width: float,
+                 rolling_friction_const: float, sliding_friction_const: float, gravitational_const: float,
+                 game_balls: list[GameBall]):
+        self.wood_width = width / 10
+        self.rail_width = width / 30
+        self.width = width + 2 * self.wood_width + 2 * self.rail_width
+        self.length = length + 2 * self.wood_width + 2 * self.rail_width
+        self.board_width = width
+        self.board_length = length
+        self.side_pocket_width = side_pocket_width
+        self.corner_pocket_width = corner_pocket_width
+
+        self.wood_color = (103, 92, 80)
+        self.rail_color = (0, 46, 30)
+        self.board_color = (21, 88, 67)
+        self.pocket_color = (32, 30, 31)
+
         self.rolling_friction_const = rolling_friction_const
         self.sliding_friction_const = sliding_friction_const
         self.gravitational_const = gravitational_const
@@ -33,7 +47,8 @@ class GameTable:
 
         table: ff.Table = table_state.getTable()
 
-        return cls(table.TABLE_WIDTH, table.TABLE_LENGTH, table.MU_ROLLING, table.MU_SLIDING, table.g, game_balls)
+        return cls(table.TABLE_WIDTH, table.TABLE_LENGTH, table.SIDE_POCKET_WIDTH, table.CORNER_POCKET_WIDTH,
+                   table.MU_ROLLING, table.MU_SLIDING, table.g, game_balls)
 
     def add_shot(self, shot: ff.Shot):
         self._shot_queue.append(shot)
@@ -42,11 +57,90 @@ class GameTable:
         #     print(event.toString())
         #     print()
 
-    def draw(self, screen: pygame.Surface, scale=300):
-        pygame.draw.rect(screen, (6, 128, 63), (0, 0, self.width * scale, self.length * scale))
+    def draw(self, scale=300):
 
+        # Wood
+        fill(*self.wood_color)
+        rect(0, 0, self.width * scale, self.length * scale)
+
+        # Rails
+        push()
+        translate(int(self.wood_width * scale), int(self.wood_width * scale))
+        fill(*self.rail_color)
+        rect(0, 0, (self.board_width + self.rail_width * 2) * scale, (self.board_length + self.rail_width * 2) * scale)
+        pop()
+
+        # Board
+        push()
+        translate(int((self.rail_width + self.wood_width) * scale), int((self.rail_width + self.wood_width) * scale))
+        fill(*self.board_color)
+        rect(0, 0, self.board_width * scale, self.board_length * scale)
+        pop()
+
+        def draw_side_pocket(rotation_angle, rotation_point):
+            push()
+            translate(*rotation_point)
+            rotate(rotation_angle)
+            fill(*self.board_color)
+            rect(
+                0,
+                -self.rail_width * scale,
+                self.side_pocket_width * scale,
+                self.side_pocket_width * scale)
+            fill(*self.pocket_color)
+            circle((self.side_pocket_width / 2) * scale, -self.corner_pocket_width / 2 * scale,
+                   self.corner_pocket_width * scale)
+
+            a = self.wood_width - (self.wood_width + self.rail_width - self.corner_pocket_width / 2)
+            c = self.corner_pocket_width / 2
+            b = math.sqrt(c ** 2 - a ** 2)
+
+            fill(*self.rail_color)
+            triangle(
+                (b + self.side_pocket_width / 2) * scale, -self.rail_width * scale,
+                self.side_pocket_width * scale, -self.rail_width * scale,
+                self.side_pocket_width * scale, 0
+            )
+            triangle(
+                (self.side_pocket_width / 2 - b) * scale, -self.rail_width * scale,
+                0, -self.rail_width * scale,
+                0, 0
+            )
+            pop()
+
+        def draw_corner_pocket(rotation_angle, rotation_point):
+            push()
+            translate(*rotation_point)
+            rotate(rotation_angle)
+            fill(*self.board_color)
+            rect(
+                0, 0,
+                self.corner_pocket_width * scale,
+                self.corner_pocket_width * scale)
+            fill(*self.pocket_color)
+            circle(self.corner_pocket_width * scale / 2, 0, self.corner_pocket_width * scale)
+            pop()
+
+        offset = math.sqrt(self.corner_pocket_width ** 2 / 2)
+
+        draw_corner_pocket(PI / 4 * 1, (
+            (self.wood_width + 2 * self.rail_width + self.board_width - offset) * scale, self.wood_width * scale))  # NE
+        draw_side_pocket(PI / 4 * 2, ((self.width - self.wood_width - self.rail_width) * scale, (
+                self.wood_width + self.rail_width + self.board_length / 2 - self.side_pocket_width / 2) * scale))  # E
+        draw_corner_pocket(PI / 4 * 3, (
+            (self.width - self.wood_width) * scale, (self.length - self.wood_width - offset) * scale))  # SE
+        draw_side_pocket(PI / 4 * 6, ((self.wood_width + self.rail_width) * scale, (
+                self.wood_width + self.rail_width + self.board_length / 2 + self.side_pocket_width / 2) * scale))  # W
+        draw_corner_pocket(PI / 4 * 5,
+                           ((self.wood_width + offset) * scale, (self.length - self.wood_width) * scale))  # SW
+        draw_corner_pocket(PI / 4 * 7, (self.wood_width * scale, (self.wood_width + offset) * scale))  # NW
+
+        # Balls
+        push()
+        translate(int((self.rail_width + self.wood_width) * scale), int((self.rail_width + self.wood_width) * scale))
         for ball in self.game_balls:
-            ball.draw(screen, scale)
+            ball.draw(scale)
+        pop()
 
     def update(self):
         if self._active_shot is None:
@@ -115,7 +209,8 @@ class GameTable:
         time_since_event_start = time_since_shot_start - cur_state.e_time
 
         def calc_sliding_displacement(delta_time: float) -> vmath.Vector2:
-            rotational_velocity: vmath.Vector3 = ball.radius * vmath.Vector3(0, 0, cur_state.ang_vel.z).cross(cur_state.ang_vel)
+            rotational_velocity: vmath.Vector3 = ball.radius * vmath.Vector3(0, 0, cur_state.ang_vel.z).cross(
+                cur_state.ang_vel)
             relative_velocity = cur_state.vel + vmath.Vector2(rotational_velocity.x, rotational_velocity.y)
             return cur_state.vel * delta_time - 0.5 * self.sliding_friction_const * self.gravitational_const * delta_time ** 2 * relative_velocity.normalize()
 
