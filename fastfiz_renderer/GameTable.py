@@ -182,6 +182,7 @@ class GameTable:
             relevant_states = self._get_relevant_ball_states_from_active_shot(ball)
             if relevant_states:
                 ball.position = relevant_states[-1].pos
+                ball.state = relevant_states[-1].state
 
     def _calc_ball_position(self, ball: GameBall, time_since_shot_start: float) -> vmath.Vector2:
         relevant_states = self._get_relevant_ball_states_from_active_shot(ball)
