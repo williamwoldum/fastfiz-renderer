@@ -1,10 +1,9 @@
-from typing import Optional, Tuple, Callable
+from typing import Tuple
 
-import p5.sketch.events
 from p5 import *
 import fastfiz as ff
 
-from GameTable import GameTable
+from .GameTable import GameTable
 
 
 class GameHandler:

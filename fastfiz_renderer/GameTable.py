@@ -1,12 +1,8 @@
-import math
-import time
-from typing import Optional
-
 import fastfiz as ff
 from p5 import *
 import vectormath as vmath
 
-from GameBall import GameBall
+from .GameBall import GameBall
 
 
 class GameTable:
