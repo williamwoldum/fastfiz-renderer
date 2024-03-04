@@ -9,7 +9,7 @@ def main():
 
     game_handler = GameHandler()
     game_handler.play_eight_ball(shot_decider, frames_per_second=120, scale=300)
-    game_handler.play_game_from_table_state(DevUtils.DevTableStates.get_one_ball_state(), shot_decider)
+    # game_handler.play_game_from_table_state(DevUtils.DevTableStates.get_one_ball_state(), shot_decider)
 
 
 if __name__ == '__main__':

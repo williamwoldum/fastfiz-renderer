@@ -11,12 +11,13 @@ class GameHandler:
     _DEFAULT_SCALE = 400
     _DEFAULT_FRAMES_PER_SECOND = 60
 
-    def __init__(self):
+    def __init__(self, mac_mode=False):
         if GameHandler._instance is None:
             self._table_state: Optional[ff.TableState] = None
             self._game_table: Optional[GameTable] = None
             self._start_ball_positions: dict[int, Tuple[float, float]] = dict()
             self._shot_decider: Optional[Callable[[ff.TableState], ff.ShotParams]] = None
+            self._mac_mode = mac_mode
             GameHandler._instance = self
         else:
             raise Exception("This class is a singleton!")
@@ -42,7 +43,7 @@ class GameHandler:
 
         def _draw():
             self._game_table.update()
-            self._game_table.draw(scale * 2)
+            self._game_table.draw(scale * 2 if self._mac_mode else scale)
 
         def _key_released(event):
             if event.key == "RIGHT":
