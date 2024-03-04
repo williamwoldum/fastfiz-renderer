@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import fastfiz as ff
 from p5 import *
 import vectormath as vmath
@@ -8,7 +10,7 @@ from .GameBall import GameBall
 class GameTable:
     def __init__(self, width: float, length: float, side_pocket_width: float, corner_pocket_width: float,
                  rolling_friction_const: float, sliding_friction_const: float, gravitational_const: float,
-                 game_balls: list[GameBall]):
+                 game_balls: list[GameBall], shot_speed_factor: float):
         self.wood_width = width / 10
         self.rail_width = width / 30
         self.width = width + 2 * self.wood_width + 2 * self.rail_width
@@ -28,12 +30,13 @@ class GameTable:
         self.gravitational_const = gravitational_const
         self.game_balls = game_balls
 
-        self._shot_queue: list[ff.Shot] = []
+        self._shot_queue: list[Tuple[ff.ShotParams, ff.Shot]] = []
         self._active_shot: Optional[ff.Shot] = None
         self._active_shot_start_time: float = 0
+        self._shot_speed_factor = shot_speed_factor
 
     @classmethod
-    def from_table_state(cls, table_state: ff.TableState):
+    def from_table_state(cls, table_state: ff.TableState, shot_speed_factor: float):
         game_balls = []
 
         for i in range(ff.Ball.CUE, ff.Ball.FIFTEEN + 1):
@@ -44,10 +47,10 @@ class GameTable:
         table: ff.Table = table_state.getTable()
 
         return cls(table.TABLE_WIDTH, table.TABLE_LENGTH, table.SIDE_POCKET_WIDTH, table.CORNER_POCKET_WIDTH,
-                   table.MU_ROLLING, table.MU_SLIDING, table.g, game_balls)
+                   table.MU_ROLLING, table.MU_SLIDING, table.g, game_balls, shot_speed_factor)
 
-    def add_shot(self, shot: ff.Shot):
-        self._shot_queue.append(shot)
+    def add_shot(self, params: ff.ShotParams, shot: ff.Shot ):
+        self._shot_queue.append((params, shot))
 
         # for event in shot.getEventList():
         #     print(event.toString())
@@ -141,12 +144,12 @@ class GameTable:
     def update(self):
         if self._active_shot is None:
             if self._shot_queue:
-                self._active_shot = self._shot_queue.pop(0)
+                self._active_shot = self._shot_queue.pop(0)[1]
                 self._active_shot_start_time = time.time()
             else:
                 return
 
-        time_since_shot_start = time.time() - self._active_shot_start_time
+        time_since_shot_start = (time.time() - self._active_shot_start_time) * self._shot_speed_factor
 
         if time_since_shot_start > self._active_shot.getDuration():
             self._force_balls_to_correct_pos()
