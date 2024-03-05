@@ -24,7 +24,7 @@ class GameBall:
         self.color = GameBall.ball_colors[number if number <= 8 else number - 8]
         self.striped = number > 8
 
-    def draw(self, scale=300):
+    def draw(self, scaling=200):
         dont_draw_states = [ff.Ball.NOTINPLAY, ff.Ball.POCKETED_NE, ff.Ball.POCKETED_E, ff.Ball.POCKETED_SE,
                             ff.Ball.POCKETED_SW, ff.Ball.POCKETED_W, ff.Ball.POCKETED_NW]
 
@@ -32,11 +32,11 @@ class GameBall:
             return
 
         fill(*self.color)
-        circle(self.position.x * scale, self.position.y * scale, self.radius * scale * 2)
+        circle(self.position.x * scaling, self.position.y * scaling, self.radius * scaling * 2)
 
         if self.striped:
             fill(*GameBall.ball_colors[0])
-            circle(self.position.x * scale, self.position.y * scale, 0.02 * scale)
+            circle(self.position.x * scaling, self.position.y * scaling, 0.02 * scaling)
 
     def update(self, time_since_shot_start: float, shot: ff.Shot, sliding_friction_const: float,
                rolling_friction_const: float, gravitational_const: float):

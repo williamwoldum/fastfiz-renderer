@@ -50,63 +50,62 @@ class GameTable:
         return cls(table.TABLE_WIDTH, table.TABLE_LENGTH, table.SIDE_POCKET_WIDTH, table.CORNER_POCKET_WIDTH,
                    table.MU_ROLLING, table.MU_SLIDING, table.g, game_balls, shot_speed_factor)
 
-    def draw(self, scale=300):
-
+    def draw(self, scaling=200):
         # Wood
         fill(*self.wood_color)
-        rect(0, 0, self.width * scale, self.length * scale)
+        rect(0, 0, self.width * scaling, self.length * scaling)
 
         # Pocket markings
-        marking_width = (self.wood_width * 2 + self.rail_width * 2) * scale
+        marking_width = (self.wood_width * 2 + self.rail_width * 2) * scaling
         fill(*self.pocket_marking_color)
         square(0, 0, marking_width)
-        square(0, self.length / 2 * scale - marking_width / 2, marking_width)
-        square(0, self.length * scale - marking_width, marking_width)
+        square(0, self.length / 2 * scaling - marking_width / 2, marking_width)
+        square(0, self.length * scaling - marking_width, marking_width)
 
-        square(self.width * scale - marking_width, 0, marking_width)
-        square(self.width * scale - marking_width, self.length / 2 * scale - marking_width / 2, marking_width)
-        square(self.width * scale - marking_width, self.length * scale - marking_width, marking_width)
+        square(self.width * scaling - marking_width, 0, marking_width)
+        square(self.width * scaling - marking_width, self.length / 2 * scaling - marking_width / 2, marking_width)
+        square(self.width * scaling - marking_width, self.length * scaling - marking_width, marking_width)
 
         # Rails
         push()
-        translate(int(self.wood_width * scale), int(self.wood_width * scale))
+        translate(int(self.wood_width * scaling), int(self.wood_width * scaling))
         fill(*self.rail_color)
-        rect(0, 0, (self.board_width + self.rail_width * 2) * scale, (self.board_length + self.rail_width * 2) * scale)
+        rect(0, 0, (self.board_width + self.rail_width * 2) * scaling, (self.board_length + self.rail_width * 2) * scaling)
         pop()
 
         # Board
         push()
-        translate(int((self.rail_width + self.wood_width) * scale), int((self.rail_width + self.wood_width) * scale))
+        translate(int((self.rail_width + self.wood_width) * scaling), int((self.rail_width + self.wood_width) * scaling))
         fill(*self.board_color)
-        rect(0, 0, self.board_width * scale, self.board_length * scale)
+        rect(0, 0, self.board_width * scaling, self.board_length * scaling)
         pop()
 
         # Left-right markings
         fill(*GameBall.ball_colors[ff.Ball.CUE])
         push()
-        translate(0, int((self.wood_width + self.rail_width) * scale))
+        translate(0, int((self.wood_width + self.rail_width) * scaling))
         for i in range(1, 8):
-            circle(self.wood_width * scale / 2, self.board_length * scale / 8 * i, self.wood_width / 10 * scale)
-            circle((self.wood_width * 1.5 + self.board_width + self.rail_width * 2) * scale,
-                   self.board_length * scale / 8 * i, self.wood_width / 10 * scale)
+            circle(self.wood_width * scaling / 2, self.board_length * scaling / 8 * i, self.wood_width / 10 * scaling)
+            circle((self.wood_width * 1.5 + self.board_width + self.rail_width * 2) * scaling,
+                   self.board_length * scaling / 8 * i, self.wood_width / 10 * scaling)
 
             if i == 2 or i == 6:
                 strokeWeight(2)
                 col = (*GameBall.ball_colors[ff.Ball.CUE], 50)
                 stroke(*col)
-                line((self.wood_width + self.rail_width) * scale,
-                     self.board_length * scale / 8 * i,
-                     (self.wood_width + self.board_width + self.rail_width) * scale,
-                     self.board_length * scale / 8 * i)
+                line((self.wood_width + self.rail_width) * scaling,
+                     self.board_length * scaling / 8 * i,
+                     (self.wood_width + self.board_width + self.rail_width) * scaling,
+                     self.board_length * scaling / 8 * i)
                 noStroke()
         pop()
 
         # Top-bottom markings
         push()
-        translate(int((self.wood_width + self.rail_width) * scale), 0)
+        translate(int((self.wood_width + self.rail_width) * scaling), 0)
         for i in range(1, 4):
-            circle(self.board_width * scale / 4 * i, self.wood_width / 2 * scale, self.wood_width / 10 * scale)
-            circle(self.board_width * scale / 4 * i, (self.wood_width * 1.5 + self.rail_width * 2 + self.board_length) * scale, self.wood_width / 10 * scale)
+            circle(self.board_width * scaling / 4 * i, self.wood_width / 2 * scaling, self.wood_width / 10 * scaling)
+            circle(self.board_width * scaling / 4 * i, (self.wood_width * 1.5 + self.rail_width * 2 + self.board_length) * scaling, self.wood_width / 10 * scaling)
         pop()
 
         def draw_side_pocket(rotation_angle, rotation_point):
@@ -116,12 +115,12 @@ class GameTable:
             fill(*self.board_color)
             rect(
                 0,
-                -self.rail_width * scale,
-                self.side_pocket_width * scale,
-                self.side_pocket_width * scale)
+                -self.rail_width * scaling,
+                self.side_pocket_width * scaling,
+                self.side_pocket_width * scaling)
             fill(*self.pocket_color)
-            circle((self.side_pocket_width / 2) * scale, -self.corner_pocket_width / 2 * scale,
-                   self.corner_pocket_width * scale)
+            circle((self.side_pocket_width / 2) * scaling, -self.corner_pocket_width / 2 * scaling,
+                   self.corner_pocket_width * scaling)
 
             a = self.wood_width - (self.wood_width + self.rail_width - self.corner_pocket_width / 2)
             c = self.corner_pocket_width / 2
@@ -129,13 +128,13 @@ class GameTable:
 
             fill(*self.rail_color)
             triangle(
-                (b + self.side_pocket_width / 2) * scale, -self.rail_width * scale,
-                self.side_pocket_width * scale, -self.rail_width * scale,
-                self.side_pocket_width * scale, 0
+                (b + self.side_pocket_width / 2) * scaling, -self.rail_width * scaling,
+                self.side_pocket_width * scaling, -self.rail_width * scaling,
+                self.side_pocket_width * scaling, 0
             )
             triangle(
-                (self.side_pocket_width / 2 - b) * scale, -self.rail_width * scale,
-                0, -self.rail_width * scale,
+                (self.side_pocket_width / 2 - b) * scaling, -self.rail_width * scaling,
+                0, -self.rail_width * scaling,
                 0, 0
             )
             pop()
@@ -147,39 +146,41 @@ class GameTable:
             fill(*self.board_color)
             rect(
                 0, 0,
-                self.corner_pocket_width * scale,
-                self.corner_pocket_width * scale)
+                self.corner_pocket_width * scaling,
+                self.corner_pocket_width * scaling)
             fill(*self.pocket_color)
-            circle(self.corner_pocket_width * scale / 2, 0, self.corner_pocket_width * scale)
+            circle(self.corner_pocket_width * scaling / 2, 0, self.corner_pocket_width * scaling)
             pop()
 
         offset = math.sqrt(self.corner_pocket_width ** 2 / 2)
 
         draw_corner_pocket(PI / 4 * 1, (
-            (self.wood_width + 2 * self.rail_width + self.board_width - offset) * scale, self.wood_width * scale))  # NE
-        draw_side_pocket(PI / 4 * 2, ((self.width - self.wood_width - self.rail_width) * scale, (
-                self.wood_width + self.rail_width + self.board_length / 2 - self.side_pocket_width / 2) * scale))  # E
+            (self.wood_width + 2 * self.rail_width + self.board_width - offset) * scaling, self.wood_width * scaling))  # NE
+        draw_side_pocket(PI / 4 * 2, ((self.width - self.wood_width - self.rail_width) * scaling, (
+                self.wood_width + self.rail_width + self.board_length / 2 - self.side_pocket_width / 2) * scaling))  # E
         draw_corner_pocket(PI / 4 * 3, (
-            (self.width - self.wood_width) * scale, (self.length - self.wood_width - offset) * scale))  # SE
-        draw_side_pocket(PI / 4 * 6, ((self.wood_width + self.rail_width) * scale, (
-                self.wood_width + self.rail_width + self.board_length / 2 + self.side_pocket_width / 2) * scale))  # W
+            (self.width - self.wood_width) * scaling, (self.length - self.wood_width - offset) * scaling))  # SE
+        draw_side_pocket(PI / 4 * 6, ((self.wood_width + self.rail_width) * scaling, (
+                self.wood_width + self.rail_width + self.board_length / 2 + self.side_pocket_width / 2) * scaling))  # W
         draw_corner_pocket(PI / 4 * 5,
-                           ((self.wood_width + offset) * scale, (self.length - self.wood_width) * scale))  # SW
-        draw_corner_pocket(PI / 4 * 7, (self.wood_width * scale, (self.wood_width + offset) * scale))  # NW
+                           ((self.wood_width + offset) * scaling, (self.length - self.wood_width) * scaling))  # SW
+        draw_corner_pocket(PI / 4 * 7, (self.wood_width * scaling, (self.wood_width + offset) * scaling))  # NW
 
         # Balls
         push()
-        translate(int((self.rail_width + self.wood_width) * scale), int((self.rail_width + self.wood_width) * scale))
+        translate(int((self.rail_width + self.wood_width) * scaling), int((self.rail_width + self.wood_width) * scaling))
         for ball in self.game_balls:
-            ball.draw(scale)
+            ball.draw(scaling)
         pop()
 
-    def update(self):
+    def update(self, shot_requester: Optional[Callable[None, None]]):
         if self._active_shot is None:
             if self._shot_queue:
                 self._active_shot = self._shot_queue.pop(0)[1]
                 self._active_shot_start_time = time.time()
             else:
+                if shot_requester:
+                    shot_requester()
                 return
 
         time_since_shot_start = (time.time() - self._active_shot_start_time) * self._shot_speed_factor
