@@ -24,6 +24,7 @@ class GameTable:
         self.rail_color = (0, 46, 30)
         self.board_color = (21, 88, 67)
         self.pocket_color = (32, 30, 31)
+        self.pocket_marking_color = (77, 70, 62)
 
         self.rolling_friction_const = rolling_friction_const
         self.sliding_friction_const = sliding_friction_const
@@ -55,6 +56,17 @@ class GameTable:
         fill(*self.wood_color)
         rect(0, 0, self.width * scale, self.length * scale)
 
+        # Pocket markings
+        marking_width = (self.wood_width * 2 + self.rail_width * 2) * scale
+        fill(*self.pocket_marking_color)
+        square(0, 0, marking_width)
+        square(0, self.length / 2 * scale - marking_width / 2, marking_width)
+        square(0, self.length * scale - marking_width, marking_width)
+
+        square(self.width * scale - marking_width, 0, marking_width)
+        square(self.width * scale - marking_width, self.length / 2 * scale - marking_width / 2, marking_width)
+        square(self.width * scale - marking_width, self.length * scale - marking_width, marking_width)
+
         # Rails
         push()
         translate(int(self.wood_width * scale), int(self.wood_width * scale))
@@ -67,6 +79,34 @@ class GameTable:
         translate(int((self.rail_width + self.wood_width) * scale), int((self.rail_width + self.wood_width) * scale))
         fill(*self.board_color)
         rect(0, 0, self.board_width * scale, self.board_length * scale)
+        pop()
+
+        # Left-right markings
+        fill(*GameBall.ball_colors[ff.Ball.CUE])
+        push()
+        translate(0, int((self.wood_width + self.rail_width) * scale))
+        for i in range(1, 8):
+            circle(self.wood_width * scale / 2, self.board_length * scale / 8 * i, self.wood_width / 10 * scale)
+            circle((self.wood_width * 1.5 + self.board_width + self.rail_width * 2) * scale,
+                   self.board_length * scale / 8 * i, self.wood_width / 10 * scale)
+
+            if i == 2 or i == 6:
+                strokeWeight(2)
+                col = (*GameBall.ball_colors[ff.Ball.CUE], 50)
+                stroke(*col)
+                line((self.wood_width + self.rail_width) * scale,
+                     self.board_length * scale / 8 * i,
+                     (self.wood_width + self.board_width + self.rail_width) * scale,
+                     self.board_length * scale / 8 * i)
+                noStroke()
+        pop()
+
+        # Top-bottom markings
+        push()
+        translate(int((self.wood_width + self.rail_width) * scale), 0)
+        for i in range(1, 4):
+            circle(self.board_width * scale / 4 * i, self.wood_width / 2 * scale, self.wood_width / 10 * scale)
+            circle(self.board_width * scale / 4 * i, (self.wood_width * 1.5 + self.rail_width * 2 + self.board_length) * scale, self.wood_width / 10 * scale)
         pop()
 
         def draw_side_pocket(rotation_angle, rotation_point):
