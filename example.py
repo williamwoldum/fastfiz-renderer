@@ -1,5 +1,4 @@
 from fastfiz_renderer import DevUtils, GameHandler
-import os
 
 
 def main():
