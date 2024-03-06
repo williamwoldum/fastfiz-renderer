@@ -73,6 +73,7 @@ class GameBall:
             displacement = calc_sliding_displacement(time_since_event_start)
 
         self.position = displacement + cur_state.pos
+        self.state = cur_state.state
 
     def force_to_end_of_shot_pos(self, shot: ff.Shot):
         relevant_states = self._get_relevant_ball_states_from_shot(shot)
