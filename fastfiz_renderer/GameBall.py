@@ -24,19 +24,35 @@ class GameBall:
         self.color = GameBall.ball_colors[number if number <= 8 else number - 8]
         self.striped = number > 8
 
-    def draw(self, scaling=200):
+        self.white_color = (255, 255, 255)
+        self.black_color = (0, 0, 0)
+
+    def draw(self, scaling=200, horizontal_mode=False, stroke_mode=False):
         dont_draw_states = [ff.Ball.NOTINPLAY, ff.Ball.POCKETED_NE, ff.Ball.POCKETED_E, ff.Ball.POCKETED_SE,
                             ff.Ball.POCKETED_SW, ff.Ball.POCKETED_W, ff.Ball.POCKETED_NW]
 
         if self.state in dont_draw_states:
             return
 
-        fill(*self.color)
+        fill(*self.color) if not stroke_mode else fill(*self.white_color)
         circle(self.position.x * scaling, self.position.y * scaling, self.radius * scaling * 2)
 
-        if self.striped:
-            fill(*GameBall.ball_colors[0])
+        if self.striped and not stroke_mode:
+            fill(*GameBall.ball_colors[ff.Ball.CUE])
             circle(self.position.x * scaling, self.position.y * scaling, 0.02 * scaling)
+
+        if stroke_mode:
+            push()
+            translate(self.position.x * scaling, self.position.y * scaling)
+
+            if horizontal_mode:
+                rotate(-PI / 2)
+
+            ts = int(scaling / 30)
+            textSize(ts)
+            fill(*GameBall.ball_colors[ff.Ball.EIGHT])
+            text(str(self.number), 0, ts * 0.8)
+            pop()
 
     def update(self, time_since_shot_start: float, shot: ff.Shot, sliding_friction_const: float,
                rolling_friction_const: float, gravitational_const: float):

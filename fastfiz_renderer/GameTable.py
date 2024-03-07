@@ -25,6 +25,9 @@ class GameTable:
         self.board_color = (21, 88, 67)
         self.pocket_color = (32, 30, 31)
         self.pocket_marking_color = (77, 70, 62)
+        self.board_marking_color = (62, 116, 99)
+        self.white_color = (255, 255, 255)
+        self.black_color = (0, 0, 0)
 
         self.rolling_friction_const = rolling_friction_const
         self.sliding_friction_const = sliding_friction_const
@@ -50,14 +53,18 @@ class GameTable:
         return cls(table.TABLE_WIDTH, table.TABLE_LENGTH, table.SIDE_POCKET_WIDTH, table.CORNER_POCKET_WIDTH,
                    table.MU_ROLLING, table.MU_SLIDING, table.g, game_balls, shot_speed_factor)
 
-    def draw(self, scaling=200):
+    def draw(self, scaling=200, horizontal_mode=False, stroke_mode=False):
+        if horizontal_mode:
+            rotate(PI / 2)
+            translate(0, -int(self.length * scaling))
+
         # Wood
-        fill(*self.wood_color)
+        fill(*self.wood_color) if not stroke_mode else fill(*self.white_color)
         rect(0, 0, self.width * scaling, self.length * scaling)
 
         # Pocket markings
         marking_width = (self.wood_width * 2 + self.rail_width * 2) * scaling
-        fill(*self.pocket_marking_color)
+        fill(*self.pocket_marking_color) if not stroke_mode else fill(*self.white_color)
         square(0, 0, marking_width)
         square(0, self.length / 2 * scaling - marking_width / 2, marking_width)
         square(0, self.length * scaling - marking_width, marking_width)
@@ -69,56 +76,82 @@ class GameTable:
         # Rails
         push()
         translate(int(self.wood_width * scaling), int(self.wood_width * scaling))
-        fill(*self.rail_color)
-        rect(0, 0, (self.board_width + self.rail_width * 2) * scaling, (self.board_length + self.rail_width * 2) * scaling)
+        fill(*self.rail_color) if not stroke_mode else fill(*self.white_color)
+        rect(0, 0, (self.board_width + self.rail_width * 2) * scaling,
+             (self.board_length + self.rail_width * 2) * scaling)
         pop()
 
         # Board
         push()
-        translate(int((self.rail_width + self.wood_width) * scaling), int((self.rail_width + self.wood_width) * scaling))
-        fill(*self.board_color)
+        translate(int((self.rail_width + self.wood_width) * scaling),
+                  int((self.rail_width + self.wood_width) * scaling))
+        fill(*self.board_color) if not stroke_mode else fill(*self.white_color)
         rect(0, 0, self.board_width * scaling, self.board_length * scaling)
         pop()
 
-        # Left-right markings
-        fill(*GameBall.ball_colors[ff.Ball.CUE])
         push()
         translate(0, int((self.wood_width + self.rail_width) * scaling))
+
+        # Arc
+        strokeWeight(ceil(scaling / 100)) if not stroke_mode else strokeWeight(1)
+        stroke(*self.board_marking_color) if not stroke_mode else stroke(*self.black_color)
+        noFill()
+        arc(
+            self.width / 2 * scaling,
+            self.board_length * scaling / 8 * 6,
+            self.board_width * scaling / 2,
+            self.board_width * scaling / 2,
+            0,
+            PI)
+        noStroke() if not stroke_mode else stroke(*self.black_color)
+
+        # Left-right markings
         for i in range(1, 8):
+            fill(*GameBall.ball_colors[ff.Ball.CUE]) if not stroke_mode else fill(*self.white_color)
             circle(self.wood_width * scaling / 2, self.board_length * scaling / 8 * i, self.wood_width / 10 * scaling)
             circle((self.wood_width * 1.5 + self.board_width + self.rail_width * 2) * scaling,
                    self.board_length * scaling / 8 * i, self.wood_width / 10 * scaling)
 
+            # Lines
             if i == 2 or i == 6:
-                strokeWeight(2)
-                col = (*GameBall.ball_colors[ff.Ball.CUE], 50)
-                stroke(*col)
+                strokeWeight(ceil(scaling / 100)) if not stroke_mode else strokeWeight(1)
+                stroke(*self.board_marking_color) if not stroke_mode else stroke(*self.black_color)
                 line((self.wood_width + self.rail_width) * scaling,
                      self.board_length * scaling / 8 * i,
-                     (self.wood_width + self.board_width + self.rail_width) * scaling,
+                     (self.wood_width + self.board_width + self.rail_width) * scaling - 1,
                      self.board_length * scaling / 8 * i)
-                noStroke()
+                noStroke() if not stroke_mode else stroke(*self.black_color)
+
+            # Middle dots
+            if i == 2 or i == 6:
+                fill(*self.board_marking_color) if not stroke_mode else fill(*self.white_color)
+                circle(self.width / 2 * scaling, self.board_length * scaling / 8 * i, ceil(scaling / 100) * 3)
         pop()
 
         # Top-bottom markings
         push()
         translate(int((self.wood_width + self.rail_width) * scaling), 0)
+        fill(*GameBall.ball_colors[ff.Ball.CUE]) if not stroke_mode else fill(*self.white_color)
         for i in range(1, 4):
             circle(self.board_width * scaling / 4 * i, self.wood_width / 2 * scaling, self.wood_width / 10 * scaling)
-            circle(self.board_width * scaling / 4 * i, (self.wood_width * 1.5 + self.rail_width * 2 + self.board_length) * scaling, self.wood_width / 10 * scaling)
+            circle(self.board_width * scaling / 4 * i,
+                   (self.wood_width * 1.5 + self.rail_width * 2 + self.board_length) * scaling,
+                   self.wood_width / 10 * scaling)
         pop()
 
         def draw_side_pocket(rotation_angle, rotation_point):
             push()
             translate(*rotation_point)
             rotate(rotation_angle)
-            fill(*self.board_color)
+            fill(*self.board_color) if not stroke_mode else fill(*self.white_color)
+            noStroke()
             rect(
                 0,
                 -self.rail_width * scaling,
                 self.side_pocket_width * scaling,
                 self.side_pocket_width * scaling)
-            fill(*self.pocket_color)
+            noStroke() if not stroke_mode else stroke(*self.black_color)
+            fill(*self.pocket_color) if not stroke_mode else fill(*self.black_color)
             circle((self.side_pocket_width / 2) * scaling, -self.corner_pocket_width / 2 * scaling,
                    self.corner_pocket_width * scaling)
 
@@ -126,36 +159,55 @@ class GameTable:
             c = self.corner_pocket_width / 2
             b = math.sqrt(c ** 2 - a ** 2)
 
-            fill(*self.rail_color)
-            triangle(
-                (b + self.side_pocket_width / 2) * scaling, -self.rail_width * scaling,
-                self.side_pocket_width * scaling, -self.rail_width * scaling,
-                self.side_pocket_width * scaling, 0
-            )
-            triangle(
-                (self.side_pocket_width / 2 - b) * scaling, -self.rail_width * scaling,
-                0, -self.rail_width * scaling,
-                0, 0
-            )
+            # triangle(
+            #     (b + self.side_pocket_width / 2) * scaling, -self.rail_width * scaling,
+            #     self.side_pocket_width * scaling, -self.rail_width * scaling,
+            #     self.side_pocket_width * scaling, 0
+            # )
+            # triangle(
+            #     (self.side_pocket_width / 2 - b) * scaling, -self.rail_width * scaling,
+            #     0, -self.rail_width * scaling,
+            #     0, 0
+            # )
+
+            fill(*self.rail_color) if not stroke_mode else fill(*self.white_color)
+            beginShape()
+            vertex(self.side_pocket_width * scaling, 0)
+            vertex((b + self.side_pocket_width / 2) * scaling, -self.rail_width * scaling),
+            vertex(self.side_pocket_width * scaling, -self.rail_width * scaling)
+            endShape()
+
+            beginShape()
+            vertex(0, 0)
+            vertex((self.side_pocket_width / 2 - b) * scaling, -self.rail_width * scaling)
+            vertex(0, -self.rail_width * scaling)
+            endShape()
             pop()
 
         def draw_corner_pocket(rotation_angle, rotation_point):
             push()
             translate(*rotation_point)
             rotate(rotation_angle)
-            fill(*self.board_color)
+            noStroke()
+            fill(*self.board_color) if not stroke_mode else fill(*self.white_color)
             rect(
                 0, 0,
                 self.corner_pocket_width * scaling,
                 self.corner_pocket_width * scaling)
-            fill(*self.pocket_color)
+            noStroke() if not stroke_mode else stroke(*self.black_color)
+            fill(*self.pocket_color) if not stroke_mode else fill(*self.black_color)
             circle(self.corner_pocket_width * scaling / 2, 0, self.corner_pocket_width * scaling)
+
+            line(0, 0, 0, self.corner_pocket_width * scaling / 2)
+            line(self.corner_pocket_width * scaling, 0, self.corner_pocket_width * scaling, self.corner_pocket_width * scaling / 2)
+
             pop()
 
         offset = math.sqrt(self.corner_pocket_width ** 2 / 2)
 
         draw_corner_pocket(PI / 4 * 1, (
-            (self.wood_width + 2 * self.rail_width + self.board_width - offset) * scaling, self.wood_width * scaling))  # NE
+            (self.wood_width + 2 * self.rail_width + self.board_width - offset) * scaling,
+            self.wood_width * scaling))  # NE
         draw_side_pocket(PI / 4 * 2, ((self.width - self.wood_width - self.rail_width) * scaling, (
                 self.wood_width + self.rail_width + self.board_length / 2 - self.side_pocket_width / 2) * scaling))  # E
         draw_corner_pocket(PI / 4 * 3, (
@@ -166,11 +218,14 @@ class GameTable:
                            ((self.wood_width + offset) * scaling, (self.length - self.wood_width) * scaling))  # SW
         draw_corner_pocket(PI / 4 * 7, (self.wood_width * scaling, (self.wood_width + offset) * scaling))  # NW
 
+        noStroke() if not stroke_mode else stroke(*self.black_color)
+
         # Balls
         push()
-        translate(int((self.rail_width + self.wood_width) * scaling), int((self.rail_width + self.wood_width) * scaling))
+        translate(int((self.rail_width + self.wood_width) * scaling),
+                  int((self.rail_width + self.wood_width) * scaling))
         for ball in self.game_balls:
-            ball.draw(scaling)
+            ball.draw(scaling, horizontal_mode, stroke_mode)
         pop()
 
     def update(self, shot_requester: Optional[Callable[None, None]]):

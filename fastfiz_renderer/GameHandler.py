@@ -12,7 +12,7 @@ class GameHandler:
     Game = Tuple[ff.TableState, ShotDecider]
 
     def __init__(self, mac_mode=False, window_pos: Tuple[int, int] = (100, 100), frames_per_second: int = 60,
-                 scaling: int = 200):
+                 scaling: int = 200, horizontal_mode: bool = False):
         if GameHandler._instance is None:
             self._game_number: int = 0
             self._games: list[GameHandler.Game] = []
@@ -23,8 +23,10 @@ class GameHandler:
 
             self._mac_mode: bool = mac_mode
             self._window_pos: Tuple[int, int] = window_pos
-            self._scaling: int = scaling
             self._frames_per_second: int = frames_per_second
+            self._scaling: int = scaling
+            self._horizontal_mode: bool = horizontal_mode
+            self._stroke_mode: bool = False
             self._shot_speed_factor: float = 1
 
             GameHandler._instance = self
@@ -52,15 +54,23 @@ class GameHandler:
         self._handle_next_game()
 
         shot_requester = self._handle_shoot if auto_play else None
+        width = int(self._game_table.width * self._scaling)
+        length = int(self._game_table.length * self._scaling)
+
+        if self._horizontal_mode:
+            width, length = length, width
 
         def _setup():
-            size(int(self._game_table.width * self._scaling), int(self._game_table.length * self._scaling))
+            size(width, length)
             ellipseMode(CENTER)
-            noStroke()
+            textAlign(CENTER, CENTER)
+            if not self._stroke_mode:
+                noStroke()
 
         def _draw():
+            background(255)
             self._game_table.update(shot_requester)
-            self._game_table.draw(self._scaling * 2 if self._mac_mode else self._scaling)
+            self._game_table.draw(self._scaling * 2 if self._mac_mode else self._scaling, self._horizontal_mode, self._stroke_mode)
 
         def _key_released(event):
             if event.key == "RIGHT":
@@ -70,6 +80,8 @@ class GameHandler:
             elif event.key == "n" or event.key == "N":
                 print(f"{self._game_number}: Game skipped")
                 self._handle_next_game()
+            elif event.key == "f" or event.key == "F":
+                self._stroke_mode = not self._stroke_mode
 
         run(renderer="skia", frame_rate=self._frames_per_second, sketch_draw=_draw, sketch_setup=_setup,
             sketch_key_released=_key_released, window_xpos=self._window_pos[0], window_ypos=self._window_pos[1],
