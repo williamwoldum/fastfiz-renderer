@@ -3,6 +3,7 @@ from typing import Tuple
 import fastfiz as ff
 from p5 import *
 import vectormath as vmath
+from vectormath import Vector2
 
 from .GameBall import GameBall
 
@@ -19,6 +20,7 @@ class GameTable:
         self.board_length = length
         self.side_pocket_width = side_pocket_width
         self.corner_pocket_width = corner_pocket_width
+        self.board_pos = self.rail_width + self.wood_width
 
         self.wood_color = (103, 92, 80)
         self.rail_color = (0, 46, 30)
@@ -83,14 +85,14 @@ class GameTable:
 
         # Board
         push()
-        translate(int((self.rail_width + self.wood_width) * scaling),
-                  int((self.rail_width + self.wood_width) * scaling))
+        translate(int(self.board_pos * scaling),
+                  int(self.board_pos * scaling))
         fill(*self.board_color) if not stroke_mode else fill(*self.white_color)
         rect(0, 0, self.board_width * scaling, self.board_length * scaling)
         pop()
 
         push()
-        translate(0, int((self.wood_width + self.rail_width) * scaling))
+        translate(0, int(self.board_pos * scaling))
 
         # Arc
         strokeWeight(ceil(scaling / 100)) if not stroke_mode else strokeWeight(1)
@@ -107,7 +109,7 @@ class GameTable:
 
         # Left-right markings
         for i in range(1, 8):
-            fill(*GameBall.ball_colors[ff.Ball.CUE]) if not stroke_mode else fill(*self.white_color)
+            fill(*GameBall.ball_colors[ff.Ball.CUE]) if not stroke_mode else fill(*self.black_color)
             circle(self.wood_width * scaling / 2, self.board_length * scaling / 8 * i, self.wood_width / 10 * scaling)
             circle((self.wood_width * 1.5 + self.board_width + self.rail_width * 2) * scaling,
                    self.board_length * scaling / 8 * i, self.wood_width / 10 * scaling)
@@ -116,7 +118,7 @@ class GameTable:
             if i == 2 or i == 6:
                 strokeWeight(ceil(scaling / 100)) if not stroke_mode else strokeWeight(1)
                 stroke(*self.board_marking_color) if not stroke_mode else stroke(*self.black_color)
-                line((self.wood_width + self.rail_width) * scaling,
+                line(self.board_pos * scaling,
                      self.board_length * scaling / 8 * i,
                      (self.wood_width + self.board_width + self.rail_width) * scaling - 1,
                      self.board_length * scaling / 8 * i)
@@ -130,8 +132,8 @@ class GameTable:
 
         # Top-bottom markings
         push()
-        translate(int((self.wood_width + self.rail_width) * scaling), 0)
-        fill(*GameBall.ball_colors[ff.Ball.CUE]) if not stroke_mode else fill(*self.white_color)
+        translate(int(self.board_pos * scaling), 0)
+        fill(*GameBall.ball_colors[ff.Ball.CUE]) if not stroke_mode else fill(*self.black_color)
         for i in range(1, 4):
             circle(self.board_width * scaling / 4 * i, self.wood_width / 2 * scaling, self.wood_width / 10 * scaling)
             circle(self.board_width * scaling / 4 * i,
@@ -155,7 +157,7 @@ class GameTable:
             circle((self.side_pocket_width / 2) * scaling, -self.corner_pocket_width / 2 * scaling,
                    self.corner_pocket_width * scaling)
 
-            a = self.wood_width - (self.wood_width + self.rail_width - self.corner_pocket_width / 2)
+            a = self.wood_width - (self.board_pos - self.corner_pocket_width / 2)
             c = self.corner_pocket_width / 2
             b = math.sqrt(c ** 2 - a ** 2)
 
@@ -209,11 +211,11 @@ class GameTable:
             (self.wood_width + 2 * self.rail_width + self.board_width - offset) * scaling,
             self.wood_width * scaling))  # NE
         draw_side_pocket(PI / 4 * 2, ((self.width - self.wood_width - self.rail_width) * scaling, (
-                self.wood_width + self.rail_width + self.board_length / 2 - self.side_pocket_width / 2) * scaling))  # E
+                self.board_pos + self.board_length / 2 - self.side_pocket_width / 2) * scaling))  # E
         draw_corner_pocket(PI / 4 * 3, (
             (self.width - self.wood_width) * scaling, (self.length - self.wood_width - offset) * scaling))  # SE
-        draw_side_pocket(PI / 4 * 6, ((self.wood_width + self.rail_width) * scaling, (
-                self.wood_width + self.rail_width + self.board_length / 2 + self.side_pocket_width / 2) * scaling))  # W
+        draw_side_pocket(PI / 4 * 6, (self.board_pos * scaling, (
+                self.board_pos + self.board_length / 2 + self.side_pocket_width / 2) * scaling))  # W
         draw_corner_pocket(PI / 4 * 5,
                            ((self.wood_width + offset) * scaling, (self.length - self.wood_width) * scaling))  # SW
         draw_corner_pocket(PI / 4 * 7, (self.wood_width * scaling, (self.wood_width + offset) * scaling))  # NW
@@ -222,8 +224,8 @@ class GameTable:
 
         # Balls
         push()
-        translate(int((self.rail_width + self.wood_width) * scaling),
-                  int((self.rail_width + self.wood_width) * scaling))
+        translate(int(self.board_pos * scaling),
+                  int(self.board_pos * scaling))
         for ball in self.game_balls:
             ball.draw(scaling, horizontal_mode, stroke_mode)
         pop()
