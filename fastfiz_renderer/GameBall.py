@@ -23,6 +23,7 @@ class GameBall:
         self.state = state
         self.color = GameBall.ball_colors[number if number <= 8 else number - 8]
         self.striped = number > 8
+        self.is_being_dragged = False
 
         self.white_color = (255, 255, 255)
         self.black_color = (0, 0, 0)
@@ -34,8 +35,15 @@ class GameBall:
         if self.state in dont_draw_states:
             return
 
+        if self.is_being_dragged:
+            stroke(*self.black_color)
+            strokeWeight(4)
+
         fill(*self.color) if not stroke_mode else fill(*self.white_color)
         circle(self.position.x * scaling, self.position.y * scaling, self.radius * scaling * 2)
+
+        if self.is_being_dragged:
+            noStroke() if not stroke_mode else strokeWeight(1)
 
         if self.striped and not stroke_mode:
             fill(*GameBall.ball_colors[ff.Ball.CUE])
@@ -96,6 +104,13 @@ class GameBall:
         if relevant_states:
             self.position = relevant_states[-1].pos
             self.state = relevant_states[-1].state
+
+    def is_mouse_over(self, scaling: int, offset: vmath.Vector2):
+        virtual_pos = vmath.Vector2(mouse_x, mouse_y) / scaling - offset
+        d = dist((self.position.x, self.position.y, 0), (virtual_pos.x, virtual_pos.y, 0))
+        hovered = d < self.radius
+        self.is_being_hovered = hovered
+        return hovered
 
     def _get_relevant_ball_states_from_shot(self, shot: ff.Shot):
         relevant_states: list[_BallState] = []

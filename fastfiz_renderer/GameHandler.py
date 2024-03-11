@@ -2,6 +2,7 @@ from typing import Tuple, Set
 
 from p5 import *
 import fastfiz as ff
+from vectormath import Vector2
 
 from .GameTable import GameTable
 
@@ -27,6 +28,7 @@ class GameHandler:
             self._scaling: int = scaling
             self._horizontal_mode: bool = horizontal_mode
             self._stroke_mode: bool = False
+            self._grab_mode: bool = False
             self._shot_speed_factor: float = 1
 
             GameHandler._instance = self
@@ -70,7 +72,8 @@ class GameHandler:
         def _draw():
             background(255)
             self._game_table.update(shot_requester)
-            self._game_table.draw(self._scaling * 2 if self._mac_mode else self._scaling, self._horizontal_mode, self._stroke_mode)
+            self._game_table.draw(self._scaling * 2 if self._mac_mode else self._scaling, self._horizontal_mode,
+                                  self._stroke_mode)
 
         def _key_released(event):
             if event.key == "RIGHT":
@@ -82,9 +85,43 @@ class GameHandler:
                 self._handle_next_game()
             elif event.key == "f" or event.key == "F":
                 self._stroke_mode = not self._stroke_mode
+            elif event.key == "g" or event.key == "G":
+                self._grab_mode = not self._grab_mode
+
+        def _mouse_pressed(_):
+            if self._grab_mode:
+                scaling = self._scaling * 2 if self._mac_mode else self._scaling
+                moused_over_ball = None
+
+                for ball in self._game_table.game_balls:
+                    if ball.is_mouse_over(scaling, Vector2(self._game_table.board_pos, self._game_table.board_pos)):
+                        moused_over_ball = ball
+                        break
+
+                if moused_over_ball:
+                    moused_over_ball.is_being_dragged = True
+                    return
+
+        def _mouse_released(_):
+            if self._grab_mode:
+                for ball in self._game_table.game_balls:
+                    self._table_state.setBall(ball.number, ball.state, ball.position.x, ball.position.y)
+                    ball.is_being_dragged = False
+
+        def _mouse_dragged(_):
+            if self._grab_mode:
+                for ball in self._game_table.game_balls:
+                    if ball.is_being_dragged:
+                        new_pos = Vector2(mouse_x, mouse_y) / self._scaling
+                        if self._mac_mode:
+                            new_pos /= 2
+                        ball.position = new_pos - Vector2(self._game_table.board_pos, self._game_table.board_pos)
+                        return
 
         run(renderer="skia", frame_rate=self._frames_per_second, sketch_draw=_draw, sketch_setup=_setup,
-            sketch_key_released=_key_released, window_xpos=self._window_pos[0], window_ypos=self._window_pos[1],
+            sketch_key_released=_key_released, sketch_mouse_dragged=_mouse_dragged,
+            sketch_mouse_released=_mouse_released, sketch_mouse_pressed=_mouse_pressed, window_xpos=self._window_pos[0],
+            window_ypos=self._window_pos[1],
             window_title="Cue Canvas")
 
     def _handle_next_game(self):
