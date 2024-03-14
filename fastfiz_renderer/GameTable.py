@@ -109,7 +109,7 @@ class GameTable:
 
         # Left-right markings
         for i in range(1, 8):
-            fill(*GameBall.ball_colors[ff.Ball.CUE]) if not stroke_mode else fill(*self.white_color)
+            fill(*GameBall.ball_colors[ff.Ball.CUE]) if not stroke_mode else fill(*self.black_color)
             circle(self.wood_width * scaling / 2, self.board_length * scaling / 8 * i, self.wood_width / 10 * scaling)
             circle((self.wood_width * 1.5 + self.board_width + self.rail_width * 2) * scaling,
                    self.board_length * scaling / 8 * i, self.wood_width / 10 * scaling)
@@ -133,7 +133,7 @@ class GameTable:
         # Top-bottom markings
         push()
         translate(int(self.board_pos * scaling), 0)
-        fill(*GameBall.ball_colors[ff.Ball.CUE]) if not stroke_mode else fill(*self.white_color)
+        fill(*GameBall.ball_colors[ff.Ball.CUE]) if not stroke_mode else fill(*self.black_color)
         for i in range(1, 4):
             circle(self.board_width * scaling / 4 * i, self.wood_width / 2 * scaling, self.wood_width / 10 * scaling)
             circle(self.board_width * scaling / 4 * i,
